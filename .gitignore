@@ -1,0 +1,41 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
+
+# Node
+node_modules/
+dist/
+build/
+
+# PHP / Laravel
+/vendor/
+.phpunit.result.cache
+.php-cs-fixer.cache
+.phpstan.cache
+storage/*.key
+storage/logs/*
+bootstrap/cache/*.php
+
+# Laravel environment
+backend/.env
+
+# Frontend environment
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Docker
+docker-data/
