@@ -1,0 +1,291 @@
+openapi: 3.0.3
+info:
+  title: V-Lab Solicitações API
+  version: 1.0.0
+  description: API REST para registro e acompanhamento de solicitações fictícias de atendimento.
+servers:
+  - url: http://localhost:8000/api/v1
+tags:
+  - name: Solicitações
+paths:
+  /solicitacoes/resumo:
+    get:
+      tags: [Solicitações]
+      summary: Retorna o resumo geral das solicitações
+      responses:
+        '200':
+          description: Totais por status, categoria e prioridade.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resumo'
+  /solicitacoes:
+    get:
+      tags: [Solicitações]
+      summary: Lista solicitações
+      parameters:
+        - $ref: '#/components/parameters/StatusQuery'
+        - $ref: '#/components/parameters/CategoriaQuery'
+        - $ref: '#/components/parameters/PrioridadeQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: Lista paginada de solicitações.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSolicitacoes'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags: [Solicitações]
+      summary: Cria uma solicitação
+      description: O backend define protocolo, status inicial e datas de controle.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CriarSolicitacao'
+            examples:
+              comum:
+                value:
+                  nome_solicitante: Maria Exemplo
+                  categoria: CONSULTA
+                  prioridade: ALTA
+                  descricao: Solicitação fictícia de atendimento.
+              urgente:
+                value:
+                  nome_solicitante: Joao Exemplo
+                  categoria: EXAME
+                  prioridade: URGENTE
+                  descricao: Solicitação fictícia de exame.
+                  justificativa_prioridade: Necessidade fictícia de prioridade.
+      responses:
+        '201':
+          description: Solicitação criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Solicitacao'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /solicitacoes/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Solicitações]
+      summary: Consulta uma solicitação
+      responses:
+        '200':
+          description: Solicitação encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Solicitacao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /solicitacoes/{id}/status:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    patch:
+      tags: [Solicitações]
+      summary: Atualiza o status de uma solicitação
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtualizarStatus'
+      responses:
+        '200':
+          description: Status atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Solicitacao'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+components:
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    StatusQuery:
+      name: status
+      in: query
+      schema:
+        $ref: '#/components/schemas/Status'
+    CategoriaQuery:
+      name: categoria
+      in: query
+      schema:
+        $ref: '#/components/schemas/Categoria'
+    PrioridadeQuery:
+      name: prioridade
+      in: query
+      schema:
+        $ref: '#/components/schemas/Prioridade'
+    PageQuery:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPageQuery:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 15
+  responses:
+    ValidationError:
+      description: Dados inválidos ou transição de status não permitida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+    NotFound:
+      description: Solicitação não encontrada.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Message'
+    ServerError:
+      description: Falha inesperada sem detalhes internos.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Message'
+  schemas:
+    Categoria:
+      type: string
+      enum: [CONSULTA, EXAME, VACINACAO, OUTRO]
+    Prioridade:
+      type: string
+      enum: [BAIXA, MEDIA, ALTA, URGENTE]
+    Status:
+      type: string
+      enum: [RECEBIDA, EM_ANALISE, AGENDADA, CONCLUIDA, CANCELADA]
+    CriarSolicitacao:
+      type: object
+      required: [nome_solicitante, categoria, prioridade, descricao]
+      properties:
+        nome_solicitante:
+          type: string
+          minLength: 2
+          maxLength: 150
+        categoria:
+          $ref: '#/components/schemas/Categoria'
+        prioridade:
+          $ref: '#/components/schemas/Prioridade'
+        descricao:
+          type: string
+          minLength: 10
+          maxLength: 2000
+        justificativa_prioridade:
+          type: string
+          maxLength: 1000
+          description: Obrigatória quando prioridade for URGENTE.
+    AtualizarStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+    Solicitacao:
+      type: object
+      required: [id, protocolo, nome_solicitante, categoria, prioridade, status, descricao, data_criacao, data_atualizacao]
+      properties:
+        id:
+          type: integer
+        protocolo:
+          type: string
+          example: SOL-2026-000001
+        nome_solicitante:
+          type: string
+        categoria:
+          $ref: '#/components/schemas/Categoria'
+        prioridade:
+          $ref: '#/components/schemas/Prioridade'
+        status:
+          $ref: '#/components/schemas/Status'
+        descricao:
+          type: string
+        justificativa_prioridade:
+          type: string
+          nullable: true
+        data_criacao:
+          type: string
+          format: date-time
+        data_atualizacao:
+          type: string
+          format: date-time
+    PaginatedSolicitacoes:
+      type: object
+      required: [data, current_page, last_page, per_page, total]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Solicitacao'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    Resumo:
+      type: object
+      required: [total, by_status, by_category, by_priority]
+      properties:
+        total:
+          type: integer
+        by_status:
+          type: object
+          additionalProperties:
+            type: integer
+        by_category:
+          type: object
+          additionalProperties:
+            type: integer
+        by_priority:
+          type: object
+          additionalProperties:
+            type: integer
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Os dados informados são inválidos.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string

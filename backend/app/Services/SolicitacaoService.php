@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\SolicitacaoPrioridade;
 use App\Enums\SolicitacaoStatus;
 use App\Models\Solicitacao;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class SolicitacaoService
@@ -26,7 +27,9 @@ class SolicitacaoService
             $dados['justificativa_prioridade'] = null;
         }
 
-        return Solicitacao::create($dados);
+        return DB::transaction(
+            static fn (): Solicitacao => Solicitacao::create($dados)
+        );
     }
 
     public function atualizarStatus(Solicitacao $solicitacao, string $novoStatus): Solicitacao

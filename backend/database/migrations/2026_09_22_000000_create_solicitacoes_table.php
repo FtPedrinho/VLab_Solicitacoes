@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('protocolo')->unique();
             $table->string('nome_solicitante');
-            $table->string('categoria');
-            $table->string('prioridade');
-            $table->string('status')->default('RECEBIDA');
+            $table->string('categoria')->index();
+            $table->string('prioridade')->index();
+            $table->string('status')->default('RECEBIDA')->index();
             $table->text('descricao');
             $table->text('justificativa_prioridade')->nullable();
             $table->timestamp('data_criacao')->useCurrent();

@@ -45,6 +45,57 @@ class SolicitacaoApiTest extends TestCase
             ->assertJsonValidationErrors(['justificativa_prioridade']);
     }
 
+    public function test_solicitacao_de_exame_urgente_e_persistida_e_consultavel(): void
+    {
+        $response = $this->postJson('/api/v1/solicitacoes', [
+            'nome_solicitante' => 'João Exemplo',
+            'categoria' => 'EXAME',
+            'prioridade' => 'URGENTE',
+            'descricao' => 'Solicitação fictícia de exame prioritário.',
+            'justificativa_prioridade' => 'Necessidade fictícia de prioridade.',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('categoria', 'EXAME')
+            ->assertJsonPath('prioridade', 'URGENTE')
+            ->assertJsonPath('status', 'RECEBIDA');
+
+        $id = $response->json('id');
+
+        $this->assertDatabaseHas('solicitacoes', [
+            'id' => $id,
+            'categoria' => 'EXAME',
+            'prioridade' => 'URGENTE',
+            'justificativa_prioridade' => 'Necessidade fictícia de prioridade.',
+        ]);
+
+        $this->getJson('/api/v1/solicitacoes/'.$id)
+            ->assertOk()
+            ->assertJsonPath('id', $id)
+            ->assertJsonPath('categoria', 'EXAME');
+    }
+
+    public function test_retorna_resumo_agregado_para_o_dashboard(): void
+    {
+        Solicitacao::create([
+            'protocolo' => 'SOL-2026-000010',
+            'nome_solicitante' => 'Resumo Recebida',
+            'categoria' => 'CONSULTA',
+            'prioridade' => 'URGENTE',
+            'status' => 'RECEBIDA',
+            'descricao' => 'Solicitação para validar o resumo do dashboard.',
+            'data_criacao' => now(),
+            'data_atualizacao' => now(),
+        ]);
+
+        $this->getJson('/api/v1/solicitacoes/resumo')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('by_status.RECEBIDA', 1)
+            ->assertJsonPath('by_category.CONSULTA', 1)
+            ->assertJsonPath('by_priority.URGENTE', 1);
+    }
+
     public function test_status_pode_ser_atualizado_se_transicao_for_permitida(): void
     {
         $solicitacao = Solicitacao::create([
@@ -90,5 +141,44 @@ class SolicitacaoApiTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['status']);
+    }
+
+    public function test_lista_pode_filtrar_por_status_e_retorna_paginacao(): void
+    {
+        Solicitacao::create([
+            'protocolo' => 'SOL-2026-000003',
+            'nome_solicitante' => 'Lista Recebida',
+            'categoria' => 'CONSULTA',
+            'prioridade' => 'MEDIA',
+            'status' => 'RECEBIDA',
+            'descricao' => 'Solicitação fictícia para validar filtros.',
+            'data_criacao' => now(),
+            'data_atualizacao' => now(),
+        ]);
+        Solicitacao::create([
+            'protocolo' => 'SOL-2026-000004',
+            'nome_solicitante' => 'Lista Cancelada',
+            'categoria' => 'OUTRO',
+            'prioridade' => 'BAIXA',
+            'status' => 'CANCELADA',
+            'descricao' => 'Solicitação fictícia cancelada.',
+            'data_criacao' => now(),
+            'data_atualizacao' => now(),
+        ]);
+
+        $response = $this->getJson('/api/v1/solicitacoes?status=RECEBIDA&per_page=1');
+
+        $response->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('per_page', 1)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.status', 'RECEBIDA');
+    }
+
+    public function test_consulta_inexistente_retorna_not_found_em_json(): void
+    {
+        $this->getJson('/api/v1/solicitacoes/999999')
+            ->assertNotFound()
+            ->assertJsonPath('message', 'Solicitação não encontrada.');
     }
 }

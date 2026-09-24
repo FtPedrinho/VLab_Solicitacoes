@@ -10,7 +10,8 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     unzip \
     zip \
-    && docker-php-ext-install pdo_pgsql pgsql zip gd \
+    && docker-php-ext-install pdo_pgsql pgsql zip gd opcache \
+    && printf "opcache.enable_cli=1\nopcache.validate_timestamps=1\nopcache.revalidate_freq=0\n" > /usr/local/etc/php/conf.d/opcache-performance.ini \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 COPY . /var/www/html
