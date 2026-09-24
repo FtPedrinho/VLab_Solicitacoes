@@ -39,6 +39,13 @@ Principais regras atendidas:
 - paginação com `per_page` padrão de 15 itens
 - atualização de status via `PATCH /api/v1/solicitacoes/{id}/status`
 
+## Documentação por camada
+
+- [Documentação do backend](docs/backend.md)
+- [Documentação do frontend](docs/frontend.md)
+- [Documentação da integração](docs/integration.md)
+- [Especificação OpenAPI](docs/openapi.yaml)
+
 ## Endpoints principais
 
 - `GET /api/v1/solicitacoes`
