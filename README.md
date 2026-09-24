@@ -138,7 +138,7 @@ o bundle gerado em `frontend/dist`.
 ### Frontend
 
 O endereço da API é configurado por `VITE_API_URL` (padrão:
-`http://localhost:8000/api/v1`). A interface apresenta estados de carregamento,
+`http://127.0.0.1:8000/api/v1`). A interface apresenta estados de carregamento,
 erro e lista vazia, resumo dos atendimentos, filtros por status/categoria/
 prioridade, formulário validado, consulta detalhada e transições de status.
 
