@@ -12,6 +12,7 @@ use App\Services\SolicitacaoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 class SolicitacaoController extends Controller
 {
@@ -84,6 +85,7 @@ class SolicitacaoController extends Controller
 
     public function updateStatus(Solicitacao $solicitacao, UpdateSolicitacaoStatusRequest $request)
     {
+        Gate::authorize('updateStatus', $solicitacao);
         $solicitacao = $this->solicitacaoService->atualizarStatus(
             $solicitacao,
             $request->validated('status')

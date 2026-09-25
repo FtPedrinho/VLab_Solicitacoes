@@ -6,6 +6,8 @@ export interface Solicitation { id:number; protocolo:string; nome_solicitante:st
 export interface Paginated<T> { data:T[]; current_page:number; last_page:number; per_page:number; total:number }
 export interface Summary { total:number; by_status:Record<Status,number>; by_category:Record<Category,number>; by_priority:Record<Priority,number> }
 export interface SolicitationInput { nome_solicitante:string; categoria:Category; prioridade:Priority; descricao:string; justificativa_prioridade?:string }
+export type UserRole = 'admin' | 'atendente' | 'solicitante';
+export interface AuthUser { id:number; name:string; email:string; role:UserRole }
 export const labels:Record<string,string> = { RECEBIDA:'Recebida', EM_ANALISE:'Em análise', AGENDADA:'Agendada', CONCLUIDA:'Concluída', CANCELADA:'Cancelada', CONSULTA:'Consulta', EXAME:'Exame', VACINACAO:'Vacinação', OUTRO:'Outro', BAIXA:'Baixa', MEDIA:'Média', ALTA:'Alta', URGENTE:'Urgente' };
 export function validateSolicitationInput(input: SolicitationInput): string | null {
   if (input.nome_solicitante.trim().length < 2 || input.descricao.trim().length < 10) {

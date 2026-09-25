@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Events\StatusAtualizado;
+use App\Listeners\RegistrarHistoricoStatus;
+use App\Models\Solicitacao;
+use App\Policies\SolicitacaoPolicy;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::policy(Solicitacao::class, SolicitacaoPolicy::class);
+        Event::listen(StatusAtualizado::class, RegistrarHistoricoStatus::class);
     }
 }

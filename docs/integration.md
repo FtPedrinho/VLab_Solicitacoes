@@ -42,6 +42,15 @@ O Compose inicia os serviços nesta ordem:
 3. Laravel inicia o servidor PHP com quatro workers.
 4. Vite inicia o frontend.
 
+O código do backend é incorporado à imagem para evitar a lentidão de bind
+mount no filesystem compartilhado do Windows. Depois de alterar arquivos em
+`backend/`, reconstrua o serviço com `docker compose up -d --build backend`.
+Para carregar dados fictícios de demonstração:
+
+```bash
+docker exec vlab-backend php artisan db:seed --force
+```
+
 Verifique o estado:
 
 ```bash
@@ -63,14 +72,14 @@ DB_PORT=5432
 DB_DATABASE=vlab_solicitacoes
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
-CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+CORS_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
 OPENAPI_PATH=/var/www/docs/openapi.yaml
 ```
 
 ### Frontend
 
 ```env
-VITE_API_URL=http://localhost:8000/api/v1
+VITE_API_URL=http://127.0.0.1:8000/api/v1
 ```
 
 Os arquivos `.env.example` documentam os valores esperados sem conter
@@ -150,11 +159,11 @@ isso for desejado.
 ## Endpoints de verificação
 
 ```text
-http://localhost:8000/up
-http://localhost:8000/api/v1/solicitacoes/resumo
-http://localhost:8000/api/v1/openapi.yaml
-http://localhost:5173
-http://localhost:5173/swagger.html
+http://127.0.0.1:8000/up
+http://127.0.0.1:8000/api/v1/solicitacoes/resumo
+http://127.0.0.1:8000/api/v1/openapi.yaml
+http://127.0.0.1:5173
+http://127.0.0.1:5173/swagger.html
 ```
 
 ## Testes de integração
@@ -170,6 +179,11 @@ Os testes de backend usam SQLite em memória para serem independentes e
 determinísticos. A execução normal da aplicação utiliza PostgreSQL no serviço
 `db`.
 
+O mesmo conjunto de verificações é executado automaticamente em
+`.github/workflows/ci.yml` para pull requests e pushes. Consulte
+[Arquitetura e operação](arquitetura.md) para limites entre camadas, decisões,
+evolução por domínio e operação dos recursos auxiliares.
+
 ## Diagnóstico rápido
 
 ```bash
@@ -184,4 +198,3 @@ Após alterações no backend, reconstrua a imagem:
 ```bash
 docker compose up -d --build backend
 ```
-

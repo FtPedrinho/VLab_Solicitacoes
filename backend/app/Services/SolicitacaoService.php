@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\SolicitacaoPrioridade;
 use App\Enums\SolicitacaoStatus;
+use App\Events\StatusAtualizado;
 use App\Models\Solicitacao;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -44,9 +45,11 @@ class SolicitacaoService
 
         $this->statusService->validarTransicao($solicitacao->status, $novoStatus);
 
+        $statusAnterior = $solicitacao->status;
         $solicitacao->status = $novoStatus;
         $solicitacao->data_atualizacao = now();
         $solicitacao->save();
+        event(new StatusAtualizado($solicitacao, $statusAnterior, $novoStatus, auth()->id()));
 
         return $solicitacao;
     }

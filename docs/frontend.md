@@ -49,7 +49,7 @@ O endereço da API é definido por `VITE_API_URL`.
 Exemplo:
 
 ```env
-VITE_API_URL=http://localhost:8000/api/v1
+VITE_API_URL=http://127.0.0.1:8000/api/v1
 ```
 
 O cliente HTTP em [src/api.ts](../frontend/src/api.ts) centraliza:
@@ -99,7 +99,7 @@ docker compose up -d --build
 Acesse:
 
 ```text
-http://localhost:5173
+http://127.0.0.1:5173
 ```
 
 Para executar o frontend isoladamente:
@@ -120,4 +120,3 @@ docker compose run --rm frontend npm run build
 
 Os testes cobrem a validação de prioridade urgente e o comportamento do
 cliente HTTP diante de filtros e erros da API.
-

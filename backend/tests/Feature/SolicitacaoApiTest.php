@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\SolicitacaoStatus;
 use App\Models\Solicitacao;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -109,7 +110,8 @@ class SolicitacaoApiTest extends TestCase
             'data_atualizacao' => now(),
         ]);
 
-        $response = $this->patchJson('/api/v1/solicitacoes/'.$solicitacao->id.'/status', [
+        $token = $this->loginAs('atendente');
+        $response = $this->withToken($token)->patchJson('/api/v1/solicitacoes/'.$solicitacao->id.'/status', [
             'status' => SolicitacaoStatus::EM_ANALISE->value,
         ]);
 
@@ -119,6 +121,11 @@ class SolicitacaoApiTest extends TestCase
         $this->assertDatabaseHas('solicitacoes', [
             'id' => $solicitacao->id,
             'status' => SolicitacaoStatus::EM_ANALISE->value,
+        ]);
+        $this->assertDatabaseHas('solicitacao_status_historicos', [
+            'solicitacao_id' => $solicitacao->id,
+            'status_anterior' => 'RECEBIDA',
+            'status_novo' => 'EM_ANALISE',
         ]);
     }
 
@@ -135,7 +142,8 @@ class SolicitacaoApiTest extends TestCase
             'data_atualizacao' => now(),
         ]);
 
-        $response = $this->patchJson('/api/v1/solicitacoes/'.$solicitacao->id.'/status', [
+        $token = $this->loginAs('atendente');
+        $response = $this->withToken($token)->patchJson('/api/v1/solicitacoes/'.$solicitacao->id.'/status', [
             'status' => SolicitacaoStatus::CONCLUIDA->value,
         ]);
 
@@ -180,5 +188,89 @@ class SolicitacaoApiTest extends TestCase
         $this->getJson('/api/v1/solicitacoes/999999')
             ->assertNotFound()
             ->assertJsonPath('message', 'Solicitação não encontrada.');
+    }
+
+    public function test_login_retorna_token_e_permite_consultar_usuario(): void
+    {
+        User::factory()->create(['email' => 'agent@example.com', 'password' => 'password', 'role' => 'atendente']);
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => 'agent@example.com',
+            'password' => 'password',
+        ])->assertOk()->assertJsonPath('user.role', 'atendente');
+
+        $this->withToken($login->json('token'))
+            ->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath('email', 'agent@example.com');
+    }
+
+    public function test_cadastro_cria_usuario_com_perfil_selecionado_e_autentica(): void
+    {
+        $response = $this->postJson('/api/v1/auth/register', [
+            'name' => 'Novo Atendente',
+            'email' => 'novo@example.com',
+            'password' => 'secret123',
+            'role' => 'atendente',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('user.email', 'novo@example.com')
+            ->assertJsonPath('user.role', 'atendente')
+            ->assertJsonStructure(['token', 'token_type', 'user']);
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'novo@example.com',
+            'role' => 'atendente',
+        ]);
+    }
+
+    public function test_cadastro_rejeita_email_duplicado_e_perfil_invalido(): void
+    {
+        User::factory()->create(['email' => 'existente@example.com']);
+
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Pessoa',
+            'email' => 'existente@example.com',
+            'password' => 'secret123',
+            'role' => 'gerente',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['email', 'role']);
+    }
+
+    public function test_atualizacao_de_status_exige_perfil_autorizado(): void
+    {
+        $solicitacao = Solicitacao::create([
+            'protocolo' => 'SOL-2026-000099', 'nome_solicitante' => 'Teste',
+            'categoria' => 'CONSULTA', 'prioridade' => 'MEDIA', 'status' => 'RECEBIDA',
+            'descricao' => 'Descrição de teste.', 'data_criacao' => now(), 'data_atualizacao' => now(),
+        ]);
+        $user = User::factory()->create(['role' => 'solicitante']);
+        $this->actingAs($user)->patchJson("/api/v1/solicitacoes/{$solicitacao->id}/status", ['status' => 'EM_ANALISE'])
+            ->assertUnauthorized();
+
+        $token = $this->postJson('/api/v1/auth/login', ['email' => $user->email, 'password' => 'password'])
+            ->json('token');
+        $this->withToken($token)->patchJson("/api/v1/solicitacoes/{$solicitacao->id}/status", ['status' => 'EM_ANALISE'])
+            ->assertForbidden();
+    }
+
+    public function test_health_informa_status_do_banco_e_request_id(): void
+    {
+        $this->withHeader('X-Request-ID', 'test-correlation-id')
+            ->getJson('/api/v1/health')
+            ->assertOk()
+            ->assertHeader('X-Request-ID', 'test-correlation-id')
+            ->assertJsonPath('database.status', 'ok');
+    }
+
+    private function loginAs(string $role): string
+    {
+        $user = User::factory()->create(['role' => $role]);
+
+        return $this->postJson('/api/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->json('token');
     }
 }

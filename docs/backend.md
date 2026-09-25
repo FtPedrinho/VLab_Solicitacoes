@@ -25,7 +25,7 @@ O backend utiliza uma separação simples de responsabilidades:
 - **Migration:** cria a tabela `solicitacoes` e garante a unicidade do protocolo.
 - **OpenAPI:** descreve os endpoints, filtros, payloads, respostas e erros em
   [docs/openapi.yaml](./openapi.yaml).
-- **Swagger UI:** disponibilizada em `http://localhost:5173/swagger.html` para
+- **Swagger UI:** disponibilizada em `http://127.0.0.1:5173/swagger.html` para
   consulta e teste visual dos endpoints documentados.
 
 ## Modelo de dados
@@ -113,11 +113,10 @@ SQLite em memória, sem apagar os dados do PostgreSQL de desenvolvimento.
 Comandos principais:
 
 ```bash
-docker compose up -d db
-docker compose run --rm backend php artisan migrate --force
+docker compose up -d --build
+docker exec vlab-backend php artisan db:seed --force
 docker compose run --rm backend php artisan test
 docker compose run --rm backend composer run lint
-docker compose up backend
 ```
 
 ## Testes
@@ -130,7 +129,7 @@ Os testes de feature cobrem:
 - transição válida;
 - rejeição de transição inválida.
 
-Resultado validado: **9 testes aprovados e 25 assertions**.
+Resultado validado: **10 testes aprovados e 35 assertions**.
 
 O lint PHP/Laravel pode ser executado pelo script `composer run lint`, usando
 o Laravel Pint em modo de verificação.

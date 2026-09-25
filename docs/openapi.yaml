@@ -4,10 +4,96 @@ info:
   version: 1.0.0
   description: API REST para registro e acompanhamento de solicitações fictícias de atendimento.
 servers:
-  - url: http://localhost:8000/api/v1
+  - url: http://127.0.0.1:8000/api/v1
 tags:
   - name: Solicitações
+  - name: Autenticação
+  - name: Operação
 paths:
+  /health:
+    get:
+      tags: [Operação]
+      summary: Verifica a API e a conexão com o PostgreSQL
+      responses:
+        '200':
+          description: Aplicação e banco disponíveis.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: Aplicação disponível, mas banco indisponível.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Autentica um usuário fictício
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+      responses:
+        '200':
+          description: Token Bearer criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /auth/register:
+    post:
+      tags: [Autenticação]
+      summary: Cria uma conta fictícia e autentica o usuário
+      description: O perfil é selecionado para demonstração local.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+      responses:
+        '201':
+          description: Conta criada e token Bearer emitido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /auth/me:
+    get:
+      tags: [Autenticação]
+      summary: Retorna o usuário autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Usuário autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/logout:
+    post:
+      tags: [Autenticação]
+      summary: Revoga o token atual
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sessão encerrada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /solicitacoes/resumo:
     get:
       tags: [Solicitações]
@@ -96,6 +182,8 @@ paths:
     patch:
       tags: [Solicitações]
       summary: Atualiza o status de uma solicitação
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -116,6 +204,11 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
   parameters:
     IdPath:
       name: id
@@ -155,6 +248,18 @@ components:
         maximum: 100
         default: 15
   responses:
+    Unauthorized:
+      description: Token ausente, inválido ou expirado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Message'
+    Forbidden:
+      description: Perfil autenticado sem permissão para a operação.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Message'
     ValidationError:
       description: Dados inválidos ou transição de status não permitida.
       content:
@@ -174,6 +279,83 @@ components:
           schema:
             $ref: '#/components/schemas/Message'
   schemas:
+    Login:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    Register:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+          format: password
+        role:
+          type: string
+          enum: [admin, atendente, solicitante]
+    LoginResponse:
+      type: object
+      required: [token, token_type, user]
+      properties:
+        token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        user:
+          $ref: '#/components/schemas/User'
+    User:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, atendente, solicitante]
+    Health:
+      type: object
+      required: [status, app, database, timestamp]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        app:
+          type: object
+          properties:
+            status:
+              type: string
+            environment:
+              type: string
+        database:
+          type: object
+          properties:
+            status:
+              type: string
+            latency_ms:
+              type: number
+        timestamp:
+          type: string
+          format: date-time
     Categoria:
       type: string
       enum: [CONSULTA, EXAME, VACINACAO, OUTRO]
