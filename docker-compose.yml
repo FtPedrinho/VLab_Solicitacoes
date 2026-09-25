@@ -52,7 +52,7 @@ services:
       timeout: 10s
       retries: 10
       start_period: 10s
-    command: sh -c "if [ ! -f vendor/autoload.php ]; then composer install --no-interaction --prefer-dist --no-progress; fi && php artisan key:generate --force && php artisan migrate --force && cd public && php -S 0.0.0.0:8000 -t . ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
+    command: sh -c "if [ ! -f .env ]; then cp .env.example .env; fi && if [ ! -f vendor/autoload.php ]; then composer install --no-interaction --prefer-dist --no-progress; fi && php artisan key:generate --force && php artisan migrate --force && cd public && php -S 0.0.0.0:8000 -t . ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
 
   frontend:
     build:

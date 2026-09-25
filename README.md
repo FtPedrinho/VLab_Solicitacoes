@@ -218,6 +218,17 @@ docker compose up -d --build
 docker compose ps
 ```
 
+Se o serviço `vlab-backend` encerrar durante a primeira execução, consulte a
+causa real antes de repetir o comando:
+
+```powershell
+docker compose logs --no-color backend
+```
+
+A inicialização cria automaticamente `backend/.env` a partir de
+`backend/.env.example`, gera a chave do Laravel e executa as migrations. O
+arquivo `.env` local não precisa ser versionado.
+
 Os três serviços devem aparecer como `healthy`:
 
 ```text
