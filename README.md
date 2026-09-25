@@ -159,16 +159,52 @@ conexão `sync`, sem exigir um serviço adicional).
 
 ### Execução completa com Docker
 
-Na raiz do projeto:
+Os comandos abaixo são para Windows PowerShell. Execute-os exatamente na ordem
+indicada. O comando correto é `docker compose up` (com espaço), e não
+`docker compose -up`.
 
-```bash
+#### 1. Abra o Docker Desktop
+
+Abra o Docker Desktop e aguarde até o Docker Engine indicar que está em
+execução.
+
+#### 2. Entre na pasta correta do projeto
+
+Se o projeto estiver em `C:\Users\SeuUsuario\VLab_Solicitacoes`:
+
+```powershell
+Set-Location C:\Users\SeuUsuario\VLab_Solicitacoes
+```
+
+Substitua o caminho pelo local real que contém `docker-compose.yml`, `backend`
+e `frontend`.
+
+Confirme a pasta:
+
+```powershell
+Get-Location
+Get-ChildItem docker-compose.yml
+Get-ChildItem backend
+Get-ChildItem frontend
+```
+
+#### 3. Confirme as ferramentas
+
+```powershell
+docker --version
+docker compose version
+```
+
+#### 4. Construa e inicie os serviços
+
+```powershell
 docker compose up -d --build
 ```
 
 O Compose inicia PostgreSQL, Laravel e React na ordem correta, aguardando os
 healthchecks das dependências. Verifique:
 
-```bash
+```powershell
 docker compose ps
 ```
 
@@ -213,7 +249,7 @@ No PowerShell, execute:
 
 ```powershell
 git clone <URL_DO_REPOSITORIO>
-Set-Location VLab_Solicitacoes
+Set-Location .\VLab_Solicitacoes
 docker compose up -d --build
 docker compose ps
 ```
@@ -222,12 +258,28 @@ Se o serviço `vlab-backend` encerrar durante a primeira execução, consulte a
 causa real antes de repetir o comando:
 
 ```powershell
+Set-Location C:\Users\SeuUsuario\VLab_Solicitacoes
+docker compose ps
 docker compose logs --no-color backend
 ```
 
 A inicialização cria automaticamente `backend/.env` a partir de
 `backend/.env.example`, gera a chave do Laravel e executa as migrations. O
 arquivo `.env` local não precisa ser versionado.
+
+Se for necessário recriar somente o backend:
+
+```powershell
+Set-Location C:\Users\SeuUsuario\VLab_Solicitacoes
+docker compose down
+docker compose build --no-cache backend
+docker compose up -d --force-recreate
+docker compose logs --no-color backend
+```
+
+Se o Docker informar que o engine não está disponível, abra o Docker Desktop,
+aguarde o engine iniciar e repita os comandos. Não apague o volume do banco
+sem necessidade.
 
 Os três serviços devem aparecer como `healthy`:
 
@@ -243,6 +295,10 @@ os dados fictícios e os usuários de demonstração:
 ```powershell
 docker exec vlab-backend php artisan db:seed --force
 ```
+
+Esse comando deve ser executado na mesma máquina onde o Docker está rodando.
+`vlab-backend` é o nome do container definido no arquivo
+`C:\Users\SeuUsuario\VLab_Solicitacoes\docker-compose.yml`.
 
 Depois, abra:
 
@@ -305,7 +361,8 @@ persistência local.
 
 Para inserir solicitações de exemplo no PostgreSQL:
 
-```bash
+```powershell
+Set-Location C:\Users\SeuUsuario\VLab_Solicitacoes
 docker exec vlab-backend php artisan db:seed --force
 ```
 
@@ -328,13 +385,15 @@ O Compose possui healthchecks para PostgreSQL, Laravel e Vite. Para acompanhar
 o estado dos serviços:
 
 ```bash
+Set-Location C:\Users\SeuUsuario\VLab_Solicitacoes
 docker compose ps
 docker compose logs -f backend
 ```
 
 ### Testes e build
 
-```bash
+```powershell
+Set-Location C:\Users\SeuUsuario\VLab_Solicitacoes
 docker compose run --rm backend php artisan test
 docker compose run --rm backend composer run lint
 docker compose run --rm frontend npm test -- --run
